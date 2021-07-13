@@ -1,124 +1,26 @@
 <template>
-  <div
-    class="view login"
-    v-if="state.username === '' || inputUsername.value === null"
-  >
-    <form class="login-form" @submit.prevent="Login">
-      <div class="form-inner">
-        <h1>Login em FireChat</h1>
-        <label for="username">Usuário</label>
-        <input
-          type="text"
-          v-model="inputUsername"
-          placeholder="Por favor, informe seu usuário"
-        />
-        <input type="submit" value="Login" />
-      </div>
-    </form>
-  </div>
-
-  <div class="view chat" v-else>
-    <header>
-      <button class="logout" @click="Logout">Sair</button>
-      <h1>Bem-vindo, {{ state.username }}</h1>
-    </header>
-    <section class="chat-box">
-      <div
-        v-for="message in state.messages"
-        :key="message.key"
-        :class="
-          message.username == state.username
-            ? 'message current-user'
-            : 'message'
-        "
-      >
-        <div class="message-inner">
-          <div class="username">{{ message.username }}</div>
-          <div class="content">{{ message.content }}</div>
-        </div>
-      </div>
-    </section>
-    <footer>
-      <form @submit.prevent="SendMessage">
-        <input
-          type="text"
-          placeholder="Escreva uma mensagem..."
-          v-model="inputMessage"
-        />
-        <input type="submit" value="Send" />
-      </form>
-    </footer>
-  </div>
+  <router-view />
 </template>
 
 <script>
-import { reactive, onMounted, ref } from "vue";
-import db from "./db";
+import firebase from "firebase";
+import { onBeforeMount } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
 export default {
   setup() {
-    const inputUsername = ref("");
-    const inputMessage = ref("");
+    const router = useRouter();
+    const route = useRoute();
 
-    const state = reactive({
-      username: "",
-      messages: [],
-    });
-
-    const Login = () => {
-      if (inputUsername.value != "" || inputUsername.value != null) {
-        state.username = inputUsername.value;
-        inputUsername.value = "";
-      }
-    };
-
-    const Logout = () => {
-      state.username = ""
-    }
-
-    const SendMessage = () => {
-      const messagesRef = db.database().ref("messages");
-
-      if (inputMessage.value === "" || inputMessage.value === null) {
-        return;
-      }
-
-      const message = {
-        username: state.username,
-        content: inputMessage.value,
-      };
-
-      messagesRef.push(message);
-      inputMessage.value = "";
-    };
-
-    onMounted(() => {
-      const messagesRef = db.database().ref("messages");
-
-      messagesRef.on("value", (snapshot) => {
-        const data = snapshot.val();
-        let messages = [];
-
-        Object.keys(data).forEach((key) => {
-          messages.push({
-            id: key,
-            username: data[key].username,
-            content: data[key].content,
-          });
-        });
-
-        state.messages = messages;
+    onBeforeMount(() => {
+      firebase.auth().onAuthStateChanged((user) => {
+        if (!user) {
+          router.replace("/login");
+        } else if (route.path == "/login") {
+          router.replace("/");
+        }
       });
     });
-
-    return {
-      inputUsername,
-      inputMessage,
-      SendMessage,
-      Login,
-      Logout,
-      state,
-    };
   },
 };
 </script>
@@ -163,7 +65,46 @@ export default {
           font-size: 16px;
           transition: 0.4s;
         }
+        button {
+           appearance: none;
+          border: none;
+          outline: none;
+          background: none;
+          display: block;
+          width: 100%;
+          padding: 10px 15px;
+          border-radius: 8px;
+          margin-bottom: 15px;
+
+          color: #fff;
+          font-size: 18px;
+          box-shadow: 0px 0px 0px rgba(0, 0, 0, 0);
+          background-color: #df4936;
+          transition: 0.4s;
+         
+        }
         input[type="text"] {
+          appearance: none;
+          border: none;
+          outline: none;
+          background: none;
+          display: block;
+          width: 100%;
+          padding: 10px 15px;
+          border-radius: 8px;
+          margin-bottom: 15px;
+
+          color: #333;
+          font-size: 18px;
+          box-shadow: 0px 0px 0px rgba(0, 0, 0, 0);
+          background-color: #f3f3f3;
+          transition: 0.4s;
+          &::placeholder {
+            color: #888;
+            transition: 0.4s;
+          }
+        }
+        input[type="password"] {
           appearance: none;
           border: none;
           outline: none;
@@ -249,7 +190,7 @@ export default {
         margin-bottom: 15px;
 
         .message-inner {
-          .username {
+          .email {
             color: #888;
             font-size: 16px;
             margin-bottom: 5px;
